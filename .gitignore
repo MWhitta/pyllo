@@ -1,0 +1,23 @@
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Literature data
+data/literature/
+data/literature_metadata.jsonl
+
+# Local storage
+storage/
+
+# IDE
+.DS_Store
+.idea/
+.vscode/
