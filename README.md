@@ -15,10 +15,12 @@ pyllo query "How do montmorillonite layers swell?"
 - **CBORG (Berkeley Lab)** – OpenAI-compatible gateway for lab-hosted models:
 ```bash
 export CBORG_API_KEY="cborg-..."
+# Optional overrides (defaults already match these values):
 export PYLLO_MODEL__PROVIDER=cborg
-export PYLLO_MODEL__MODEL="gpt-5"                     # pick from pyllo cborg-models
+export PYLLO_MODEL__MODEL="gpt-5"
 export PYLLO_MODEL__API_KEY_ENV=CBORG_API_KEY
-export PYLLO_MODEL__API_BASE="https://api.cborg.lbl.gov"   # append /openai/v1 if your org requires it
+export PYLLO_MODEL__API_BASE="https://api.cborg.lbl.gov"
+export PYLLO_MODEL__MAX_TOKENS=128000
 ```
 Discover current model identifiers:
 ```bash

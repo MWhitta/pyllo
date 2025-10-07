@@ -39,36 +39,92 @@ class GenerationResult:
     context: List[str]
 
 
+def _collect_text_fragments(value: object, *, allow_reasoning_text: bool = False) -> List[str]:
+    """Recursively gather textual fragments from OpenAI response structures."""
+
+    fragments: List[str] = []
+    seen: set[str] = set()
+
+    def add(text: str) -> None:
+        cleaned = text.strip()
+        if cleaned and cleaned not in seen:
+            seen.add(cleaned)
+            fragments.append(cleaned)
+
+    def visit(obj: object, allow_free_text: bool) -> None:
+        if obj is None:
+            return
+        if isinstance(obj, str):
+            add(obj)
+            return
+        if isinstance(obj, dict):
+            obj_type = obj.get("type")
+            candidate_keys = ("output_text", "final_answer", "answer")
+            found_candidate = False
+            for key in candidate_keys:
+                if key in obj:
+                    found_candidate = True
+                    visit(obj[key], allow_free_text=False)
+            if found_candidate:
+                return
+
+            text_value = obj.get("text")
+            if isinstance(text_value, (str, list, dict)):
+                if allow_free_text or obj_type in {"output_text", "final_answer", "answer", "text"}:
+                    visit(text_value, allow_free_text=False)
+
+            value_field = obj.get("value")
+            if isinstance(value_field, (str, list, dict)):
+                if allow_free_text or obj_type in {"output_text", "final_answer", "answer", "text"}:
+                    visit(value_field, allow_free_text=False)
+
+            nested_keys = (
+                "steps",
+                "segments",
+                "content",
+                "parts",
+                "messages",
+                "items",
+                "choices",
+                "reasoning",
+            )
+            for key in nested_keys:
+                if key in obj:
+                    visit(obj[key], allow_free_text=True)
+            return
+        if isinstance(obj, list):
+            for item in obj:
+                visit(item, allow_free_text=allow_free_text)
+
+    visit(value, allow_free_text=allow_reasoning_text)
+    return fragments
+
+
+def _extract_text_from_reasoning(reasoning: object) -> str:
+    """Pull the final textual answer out of OpenAI reasoning payloads."""
+    fragments = _collect_text_fragments(reasoning or {}, allow_reasoning_text=False)
+    if not fragments:
+        fragments = _collect_text_fragments(reasoning or {}, allow_reasoning_text=True)
+    return "\n".join(fragments).strip()
+
+
 def _normalize_message_content(message: dict) -> str:
     """Extract textual content from an OpenAI-style chat message."""
-    content = message.get("content")
-    if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, list):
-        parts: List[str] = []
-        for item in content:
-            if isinstance(item, str):
-                item = item.strip()
-                if item:
-                    parts.append(item)
-                continue
-            if not isinstance(item, dict):
-                continue
-            if "text" in item and isinstance(item["text"], str):
-                text = item["text"].strip()
-                if text:
-                    parts.append(text)
-                    continue
-            if "value" in item and isinstance(item["value"], str):
-                text = item["value"].strip()
-                if text:
-                    parts.append(text)
-                    continue
-            if item.get("type") in {"text", "output_text"} and isinstance(item.get("text"), str):
-                text = item["text"].strip()
-                if text:
-                    parts.append(text)
-        return "\n".join(parts).strip()
+    if not isinstance(message, dict):
+        return ""
+
+    for key in ("output_text", "final_answer", "answer"):
+        fragments = _collect_text_fragments(message.get(key), allow_reasoning_text=False)
+        if fragments:
+            return "\n".join(fragments).strip()
+
+    reasoning_text = _extract_text_from_reasoning(message.get("reasoning"))
+    if reasoning_text:
+        return reasoning_text
+
+    content_fragments = _collect_text_fragments(message.get("content"), allow_reasoning_text=True)
+    if content_fragments:
+        return "\n".join(content_fragments).strip()
     return ""
 
 def _sanitize_for_api(text: str) -> str:
@@ -123,6 +179,10 @@ class ClayGenerator:
         text = _normalize_message_content(message)
         if text:
             return text
+        for key in ("output_text", "text", "final_answer", "answer"):
+            fragments = _collect_text_fragments(choices[0].get(key), allow_reasoning_text=True)
+            if fragments:
+                return "\n".join(fragments).strip()
         # Legacy fallback
         if "text" in choices[0] and isinstance(choices[0]["text"], str):
             text_value = choices[0]["text"].strip()

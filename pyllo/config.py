@@ -12,16 +12,16 @@ from pydantic_settings import BaseSettings
 class ModelConfig(BaseModel):
     """LLM model configuration."""
 
-    provider: str = Field(default="litellm", description="Provider identifier handled by litellm.")
-    model: str = Field(default="gpt-4o", description="Model name to use for generation.")
+    provider: str = Field(default="cborg", description="Provider identifier handled by litellm.")
+    model: str = Field(default="gpt-5", description="Model name to use for generation.")
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
-    max_tokens: int = Field(default=512, gt=1)
+    max_tokens: int = Field(default=128000, gt=1)
     api_base: Optional[str] = Field(
-        default=None,
+        default="https://api.cborg.lbl.gov",
         description="Optional custom API base for OpenAI-compatible endpoints.",
     )
     api_key_env: str = Field(
-        default="OPENAI_API_KEY",
+        default="CBORG_API_KEY",
         description="Environment variable that stores the API key for the selected provider.",
     )
     request_timeout: float = Field(default=60.0, gt=0)
