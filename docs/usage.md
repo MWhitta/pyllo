@@ -41,3 +41,36 @@ Add `--top-k` or `--no-show-context` flags as needed.
 - Track ingestion runs by storing logs in a versioned directory under `storage/`.
 
 Refer to `docs/rag_plan.md` for roadmap and architectural details.
+
+## 6. Use CBORG Models
+
+CBORG exposes an OpenAI-compatible API. Configure Pyllo with the CBORG provider before querying:
+
+```bash
+export CBORG_API_KEY="cborg-..."
+export PYLLO_MODEL__PROVIDER=cborg
+export PYLLO_MODEL__MODEL="aws/llama-3.1-405b"
+export PYLLO_MODEL__API_KEY_ENV=CBORG_API_KEY
+export PYLLO_MODEL__API_BASE="https://api.cborg.lbl.gov"   # append /openai/v1 if your deployment requires it
+```
+
+Replace the model name with any identifier from https://cborg.lbl.gov/models/.
+
+List available identifiers locally:
+
+```bash
+pyllo cborg-models --show-details
+```
+
+The `API Name(s)` column in the output contains the string to use with `PYLLO_MODEL__MODEL`.
+
+## 7. Collect Mineral Manuscripts
+
+Use Crossref to gather referenced manuscripts for IMA-approved minerals listed in `data/minerals/`:
+
+```bash
+pyllo minerals-download --mineral montmorillonite --mineral kaolinite --max-per-mineral 2
+```
+
+Downloads (when permitted) land in `data/minerals/manuscripts/`, alongside JSON metadata for later ingestion.
+Set `PYLLO_MINERALS_USER_AGENT` to include your contact details for polite Crossref access.

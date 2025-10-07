@@ -16,6 +16,17 @@ class ModelConfig(BaseModel):
     model: str = Field(default="gpt-4o", description="Model name to use for generation.")
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     max_tokens: int = Field(default=512, gt=1)
+    api_base: Optional[str] = Field(
+        default=None,
+        description="Optional custom API base for OpenAI-compatible endpoints.",
+    )
+    api_key_env: str = Field(
+        default="OPENAI_API_KEY",
+        description="Environment variable that stores the API key for the selected provider.",
+    )
+    request_timeout: float = Field(default=60.0, gt=0)
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class EmbeddingConfig(BaseModel):

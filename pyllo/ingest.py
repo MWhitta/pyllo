@@ -112,7 +112,14 @@ def ingest_corpus(settings: Settings | None = None) -> Path:
     console.print(f"[cyan]Found {len(pdf_paths)} PDF files. Beginning ingestion...")
 
     for path in track(pdf_paths, description="Processing PDFs"):
-        text, page_count = extract_full_text(path)
+        try:
+            text, page_count = extract_full_text(path)
+        except FileNotFoundError:
+            console.print(f"[red]Skipping missing file: {path}[/red]")
+            continue
+        except Exception as exc:
+            console.print(f"[red]Failed to parse {path}: {exc}[/red]")
+            continue
         doc_meta = build_document_metadata(path, metadata_map, page_count=page_count)
 
         base_meta = {
