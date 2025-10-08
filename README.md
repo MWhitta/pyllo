@@ -32,6 +32,7 @@ pyllo cborg-models --show-details
 - `pyllo query "…"` – ask the clay expert, printing an answer plus retrieved context.
 - `pyllo cborg-models --show-details` – list CBORG models and their API names.
 - `pyllo minerals-download --mineral montmorillonite` – fetch Crossref manuscripts for minerals in `data/minerals/`.
+- `pyllo structures-download --mineral Quartz --limit 1` – pull experimental (RRUFF) and simulated (Materials Project) CIF files into `data/structure/`.
 
 ## Project Layout
 - `data/literature/` – source PDFs (with optional `data/literature_metadata.jsonl`).

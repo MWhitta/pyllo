@@ -74,3 +74,14 @@ pyllo minerals-download --mineral montmorillonite --mineral kaolinite --max-per-
 
 Downloads (when permitted) land in `data/minerals/manuscripts/`, alongside JSON metadata for later ingestion.
 Set `PYLLO_MINERALS_USER_AGENT` to include your contact details for polite Crossref access.
+
+## 8. Collect Crystal Structures
+
+- Ensure a RRUFF mineral export (e.g., `data/minerals/rag-minerals-rruff-export-*.csv`) exists.
+- Download experimental and simulated CIF files into `data/structure/experimental/` and `data/structure/simulated/`:
+
+```bash
+pyllo structures-download --mineral Quartz --limit 1
+```
+
+- Provide a Materials Project API key via `--materials-api-key` or the `MAPI_KEY`/`MATERIALS_PROJECT_API_KEY` environment variables to enable simulated structures. Install `pymatgen` (`pip install pymatgen`) if you have not already.

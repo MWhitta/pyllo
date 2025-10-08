@@ -14,6 +14,7 @@ from .ingest import ingest_corpus
 from .cborg import fetch_cborg_models
 from .minerals import collect_mineral_manuscripts
 from .rag import ClayRAG
+from .structures import gather_structures, StructureDownloaderError
 
 
 app = typer.Typer(help="Pyllo CLI: clay-science retrieval augmented generation toolkit.")
@@ -130,6 +131,69 @@ def cborg_models(show_details: bool = typer.Option(False, help="Include addition
         table.add_row(*row)
 
     console.print(table)
+
+
+@app.command("structures-download")
+def structures_download(
+    csv_path: Path = typer.Option(
+        None,
+        "--csv",
+        help="Path to the RRUFF mineral CSV export (defaults to latest rag-minerals-rruff-export-*.csv).",
+    ),
+    minerals: List[str] = typer.Option(
+        None,
+        "--mineral",
+        "-m",
+        help="Limit downloads to one or more mineral names (repeatable).",
+    ),
+    limit: int = typer.Option(0, help="Stop after processing N minerals (0 processes all)."),
+    skip_experimental: bool = typer.Option(False, help="Skip experimental CIF downloads from RRUFF."),
+    skip_simulated: bool = typer.Option(False, help="Skip simulated CIF downloads from Materials Project."),
+    api_key: str = typer.Option(
+        None,
+        "--materials-api-key",
+        "-k",
+        help="Materials Project API key (falls back to MAPI_KEY env var).",
+    ),
+    sleep_seconds: float = typer.Option(0.5, help="Delay between HTTP requests."),
+) -> None:
+    """Download experimental (RRUFF) and simulated (Materials Project) CIFs into data/structure."""
+
+    if not csv_path:
+        minerals_dir = Path("data/minerals")
+        matches = sorted(minerals_dir.glob("rag-minerals-rruff-export-*.csv"))
+        if not matches:
+            console.print(
+                "[red]Mineral CSV not found. Provide --csv or place a rag-minerals-rruff-export-*.csv under data/minerals.[/red]"
+            )
+            raise typer.Exit(code=1)
+        csv_path = matches[-1]
+
+    try:
+        results = gather_structures(
+            csv_path=csv_path,
+            base_dir=Path("data"),
+            minerals=minerals,
+            limit=limit or None,
+            include_experimental=not skip_experimental,
+            include_simulated=not skip_simulated,
+            api_key=api_key,
+            sleep_seconds=sleep_seconds,
+            console=console,
+        )
+    except StructureDownloaderError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    downloaded = [res for res in results if res.status == "downloaded"]
+    existing = [res for res in results if res.status == "exists"]
+    skipped = [res for res in results if res.status not in {"downloaded", "exists"}]
+
+    console.print(
+        f"[green]Downloaded {len(downloaded)} structures[/green], "
+        f"[yellow]{len(existing)} already present[/yellow], "
+        f"[cyan]{len(skipped)} skipped or missing[/cyan]."
+    )
 
 
 def main() -> None:
