@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-import numpy as np
-
 from .config import EmbeddingConfig, RetrieverConfig, Settings
 from .embedding import embed_texts
 from .vectorstore import VectorRecord, VectorStore
@@ -42,4 +40,3 @@ class Retriever:
         query_emb = embed_texts([query], self.embedding_config)
         results = self.store.search(query_emb, top_k=top_k)[0]
         return [RetrievedChunk(record=record, score=score) for record, score in results]
-

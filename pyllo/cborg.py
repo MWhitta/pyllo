@@ -125,4 +125,3 @@ def cborg_models_as_csv(models: Iterable[CBORGModel]) -> str:
             ]
         )
     return output.getvalue()
-

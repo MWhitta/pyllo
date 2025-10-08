@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings
 
 
@@ -34,7 +34,9 @@ class EmbeddingConfig(BaseModel):
 
     model_name: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
     batch_size: int = Field(default=16, gt=0)
-    device: Optional[str] = Field(default=None, description="Torch device override, e.g. 'cpu' or 'cuda'.")
+    device: Optional[str] = Field(
+        default=None, description="Torch device override, e.g. 'cpu' or 'cuda'."
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -45,7 +47,10 @@ class RetrieverConfig(BaseModel):
     top_k: int = Field(default=5, gt=0)
     reranker_model: Optional[str] = Field(
         default=None,
-        description="Optional cross encoder model for reranking; if unset retrieval uses only embeddings.",
+        description=(
+            "Optional cross encoder model for reranking; if unset retrieval uses only "
+            "embeddings."
+        ),
     )
 
 

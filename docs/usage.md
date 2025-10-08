@@ -84,4 +84,4 @@ Set `PYLLO_MINERALS_USER_AGENT` to include your contact details for polite Cross
 pyllo structures-download --mineral Quartz --limit 1
 ```
 
-- Provide a Materials Project API key via `--materials-api-key` or the `MAPI_KEY`/`MATERIALS_PROJECT_API_KEY` environment variables to enable simulated structures. Install `pymatgen` (`pip install pymatgen`) if you have not already.
+- Provide a Materials Project API key via `--materials-api-key` or the `MAPI_KEY`/`MATERIALS_PROJECT_API_KEY` environment variables to enable simulated structures. Install `pymatgen` (`pip install pymatgen`) if you have not already. Simulated CIFs are saved as `data/structure/simulated/mp-<mineral>-<mpid>.cif` so polymorphs are distinguished.

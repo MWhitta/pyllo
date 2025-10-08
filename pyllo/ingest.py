@@ -17,7 +17,6 @@ from .embedding import embed_texts
 from .pdf import extract_full_text
 from .vectorstore import VectorStore
 
-
 console = Console()
 
 
@@ -65,7 +64,9 @@ def discover_pdfs(dirs: Iterable[Path]) -> List[Path]:
     return sorted({p.resolve() for p in pdfs})
 
 
-def build_document_metadata(path: Path, metadata_map: Dict[str, dict], *, page_count: int) -> DocumentMetadata:
+def build_document_metadata(
+    path: Path, metadata_map: Dict[str, dict], *, page_count: int
+) -> DocumentMetadata:
     """Assemble metadata for a single PDF."""
     sha = sha256_file(path)
     key = path.stem
@@ -102,7 +103,8 @@ def ingest_corpus(settings: Settings | None = None) -> Path:
 
     if not pdf_paths:
         console.print(
-            "[yellow]No PDF files found. Place documents under the literature directory (data/literature by default) and retry."
+            "[yellow]No PDF files found. Place documents under the literature "
+            "directory (data/literature by default) and retry."
         )
         raise FileNotFoundError("No literature PDFs discovered for ingestion.")
 

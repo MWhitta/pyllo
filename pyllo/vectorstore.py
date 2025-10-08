@@ -88,7 +88,9 @@ class VectorStore:
                 )
         return cls(index=index, records=records)
 
-    def search(self, query_embeddings: np.ndarray, top_k: int) -> List[List[Tuple[VectorRecord, float]]]:
+    def search(
+        self, query_embeddings: np.ndarray, top_k: int
+    ) -> List[List[Tuple[VectorRecord, float]]]:
         """Search the index and return records with similarity scores."""
         faiss.normalize_L2(query_embeddings)
         scores, indices = self.index.search(query_embeddings, top_k)
@@ -102,4 +104,3 @@ class VectorStore:
                 pair_list.append((record, float(score)))
             output.append(pair_list)
         return output
-

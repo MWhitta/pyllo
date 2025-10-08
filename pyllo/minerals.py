@@ -6,9 +6,9 @@ import csv
 import json
 import os
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import requests
 
@@ -116,7 +116,9 @@ def download_pdf(candidate_urls: Sequence[str], path: Path) -> None:
             continue
         headers = {"User-Agent": USER_AGENT, "Accept": "application/pdf"}
         try:
-            with requests.get(url, headers=headers, timeout=60, stream=True, allow_redirects=True) as resp:
+            with requests.get(
+                url, headers=headers, timeout=60, stream=True, allow_redirects=True
+            ) as resp:
                 resp.raise_for_status()
                 content_type = resp.headers.get("content-type", "").lower()
                 if "pdf" not in content_type:

@@ -6,17 +6,18 @@ import os
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
-from openai import OpenAI
 from litellm import completion
+from openai import OpenAI
 
 from .config import ModelConfig
 from .retriever import RetrievedChunk
 
-
 SYSTEM_PROMPT = (
     "You are Pyllo, an AI clay-science expert. "
-    "Answer questions about clay minerals, geochemistry, and industrial applications with precision. "
-    "Ground every statement in the provided context snippets and include citations in [AuthorYear] format. "
+    "Answer questions about clay minerals, geochemistry, and industrial "
+    "applications with precision. "
+    "Ground every statement in the provided context snippets and include "
+    "citations in [AuthorYear] format. "
     "If the context is insufficient, say so and suggest what information would help."
 )
 
@@ -27,9 +28,7 @@ def build_context(chunks: Iterable[RetrievedChunk]) -> List[str]:
     for item in chunks:
         meta = item.record.metadata
         citation = meta.get("citation") or meta.get("source_id") or item.record.source_id
-        formatted.append(
-            f"[{citation}] Score={item.score:.3f}\n{item.record.content.strip()}"
-        )
+        formatted.append(f"[{citation}] Score={item.score:.3f}\n{item.record.content.strip()}")
     return formatted
 
 
@@ -127,6 +126,7 @@ def _normalize_message_content(message: dict) -> str:
         return "\n".join(content_fragments).strip()
     return ""
 
+
 def _sanitize_for_api(text: str) -> str:
     """Return ASCII-safe text to avoid downstream encoding errors."""
     if not isinstance(text, str):
@@ -203,7 +203,9 @@ class ClayGenerator:
     def generate(self, query: str, chunks: List[RetrievedChunk]) -> GenerationResult:
         """Generate an answer conditioned on retrieved context."""
         context_blocks = build_context(chunks)
-        context_text = "\n\n".join(context_blocks) if context_blocks else "No supporting context available."
+        context_text = (
+            "\n\n".join(context_blocks) if context_blocks else "No supporting context available."
+        )
         safe_query = _sanitize_for_api(query)
         safe_context = _sanitize_for_api(context_text)
 

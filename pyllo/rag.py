@@ -30,4 +30,3 @@ class ClayRAG:
         retrieved = self.retriever.retrieve(query)
         result: GenerationResult = self.generator.generate(query, retrieved)
         return RAGAnswer(query=query, answer=result.answer, context=result.context)
-

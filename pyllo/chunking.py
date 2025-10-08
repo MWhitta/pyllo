@@ -6,7 +6,6 @@ import re
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
-
 HEADING_PATTERN = re.compile(r"^\s*((\d+(\.\d+)*)|[A-Z][A-Z\s]{2,})[\.\)]?\s")
 
 
@@ -85,4 +84,3 @@ def chunk_text(
             )
             chunk_idx += 1
             start += stride
-

@@ -37,4 +37,3 @@ def extract_full_text(path: Path) -> Tuple[str, int]:
     pages = list(extractor.extract(path))
     combined = "\n\n".join(page.text for page in pages)
     return combined, len(pages)
-

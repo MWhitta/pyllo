@@ -15,7 +15,6 @@ import requests
 from bs4 import BeautifulSoup
 from rich.console import Console
 
-
 RRUFF_SEARCH_URL = "https://rruff.geo.arizona.edu/AMS/result.php"
 RRUFF_BASE_URL = "https://rruff.geo.arizona.edu"
 MATERIALS_SUMMARY_URL = "https://api.materialsproject.org/materials/summary/"
@@ -58,7 +57,9 @@ def ensure_structure_dirs(base_dir: Path) -> tuple[Path, Path]:
     return experimental_dir, simulated_dir
 
 
-def read_mineral_records(csv_path: Path, restrict_to: Optional[Sequence[str]] = None, limit: Optional[int] = None) -> List[MineralRecord]:
+def read_mineral_records(
+    csv_path: Path, restrict_to: Optional[Sequence[str]] = None, limit: Optional[int] = None
+) -> List[MineralRecord]:
     restrict_normalized = {name.strip().lower() for name in restrict_to or []}
     records: List[MineralRecord] = []
 
@@ -72,7 +73,9 @@ def read_mineral_records(csv_path: Path, restrict_to: Optional[Sequence[str]] = 
                 continue
             formula = row.get("IMA Chemistry (plain)") or row.get("RRUFF Chemistry (plain)") or None
             elements_raw = row.get("Chemistry Elements") or ""
-            elements = tuple(sorted({item for item in elements_raw.replace(",", " ").split() if item}))
+            elements = tuple(
+                sorted({item for item in elements_raw.replace(",", " ").split() if item})
+            )
             records.append(MineralRecord(name=name, formula=formula, elements=elements))
             if limit and len(records) >= limit:
                 break
@@ -118,7 +121,13 @@ def normalize_formula(formula: str) -> Optional[str]:
     return total.reduced_formula
 
 
-def download_rruff_cif(mineral: MineralRecord, output_dir: Path, *, session: Optional[requests.Session] = None, sleep_seconds: float = 0.8) -> DownloadResult:
+def download_rruff_cif(
+    mineral: MineralRecord,
+    output_dir: Path,
+    *,
+    session: Optional[requests.Session] = None,
+    sleep_seconds: float = 0.8,
+) -> DownloadResult:
     sess = session or requests.Session()
     payload = {
         "Mineral": mineral.name,
@@ -235,12 +244,15 @@ def download_materials_project_cif(
     headers = {"X-API-KEY": key}
     params = {
         "formula": formula,
-        "_fields": "material_id,formula_pretty,structure",
-        "_limit": 1,
+        "_fields": "material_id,formula_pretty,structure,energy_per_atom",
+        "_limit": 10,
+        "_sort_fields": "energy_per_atom",
     }
 
     try:
-        summary_response = sess.get(MATERIALS_SUMMARY_URL, params=params, headers=headers, timeout=30)
+        summary_response = sess.get(
+            MATERIALS_SUMMARY_URL, params=params, headers=headers, timeout=30
+        )
     except requests.RequestException as exc:
         return DownloadResult(
             mineral=mineral,
@@ -280,27 +292,37 @@ def download_materials_project_cif(
             message=f"No Materials Project entries found for formula {formula}.",
         )
 
-    entry = entries[0]
-    material_id = entry.get("material_id")
-    if not material_id:
+    selected_entry = None
+    for candidate in entries:
+        if candidate.get("structure") and candidate.get("material_id"):
+            selected_entry = candidate
+            break
+
+    if not selected_entry:
         return DownloadResult(
             mineral=mineral,
             source="materials_project",
             status="error",
-            message="Materials Project response lacked material_id field.",
+            message="Materials Project response lacked usable structure entries.",
         )
 
-    structure_payload = entry.get("structure")
+    material_id = selected_entry["material_id"]
+    structure_payload = selected_entry.get("structure")
     if not structure_payload:
         return DownloadResult(
             mineral=mineral,
             source="materials_project",
             status="error",
-            message="Materials Project response lacked structure data. Try widening the query or checking API permissions.",
+            message=(
+                "Materials Project response lacked structure data. Try widening the "
+                "query or checking API permissions."
+            ),
         )
 
+    energy_pa = selected_entry.get("energy_per_atom")
+
     slug = slugify(mineral.name)
-    target_path = output_dir / f"mp-{slug}.cif"
+    target_path = output_dir / f"mp-{slug}-{material_id}.cif"
     if target_path.exists():
         return DownloadResult(
             mineral=mineral,
@@ -314,7 +336,8 @@ def download_materials_project_cif(
         from pymatgen.core import Structure
     except ImportError as exc:
         raise StructureDownloaderError(
-            "pymatgen is required to serialize Materials Project structures. Install pymatgen to continue."
+            "pymatgen is required to serialize Materials Project structures. "
+            "Install pymatgen to continue."
         ) from exc
 
     try:
@@ -332,11 +355,15 @@ def download_materials_project_cif(
     if sleep_seconds:
         time.sleep(sleep_seconds)
 
+    message = f"Saved CIF for {material_id}"
+    if energy_pa is not None:
+        message += f" (energy_per_atom={energy_pa:.6f} eV)"
+
     return DownloadResult(
         mineral=mineral,
         source="materials_project",
         status="downloaded",
-        message=f"Saved CIF for {material_id}",
+        message=message,
         path=target_path,
     )
 
@@ -365,7 +392,9 @@ def gather_structures(
 
     for mineral in records:
         if include_experimental:
-            result = download_rruff_cif(mineral, experimental_dir, session=session, sleep_seconds=sleep_seconds)
+            result = download_rruff_cif(
+                mineral, experimental_dir, session=session, sleep_seconds=sleep_seconds
+            )
             results.append(result)
             console.log(f"[cyan]RRUFF[/cyan] {mineral.name}: {result.status} - {result.message}")
 
@@ -378,6 +407,9 @@ def gather_structures(
                 sleep_seconds=sleep_seconds,
             )
             results.append(result)
-            console.log(f"[magenta]Materials Project[/magenta] {mineral.name}: {result.status} - {result.message}")
+            console.log(
+                f"[magenta]Materials Project[/magenta] {mineral.name}: "
+                f"{result.status} - {result.message}"
+            )
 
     return results

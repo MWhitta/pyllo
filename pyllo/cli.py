@@ -9,13 +9,12 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .cborg import fetch_cborg_models
 from .config import Settings
 from .ingest import ingest_corpus
-from .cborg import fetch_cborg_models
 from .minerals import collect_mineral_manuscripts
 from .rag import ClayRAG
-from .structures import gather_structures, StructureDownloaderError
-
+from .structures import StructureDownloaderError, gather_structures
 
 app = typer.Typer(help="Pyllo CLI: clay-science retrieval augmented generation toolkit.")
 console = Console()
@@ -36,7 +35,9 @@ def ingest(
     console.print("[bold cyan]Starting ingestion[/bold cyan]")
     store_path = ingest_corpus(settings)
     console.print(f"[green]Ingestion complete. Vector store at {store_path}[/green]")
-    console.print("[yellow]Press Ctrl+C if the shell prompt does not reappear after ingestion.[/yellow]")
+    console.print(
+        "[yellow]Press Ctrl+C if the shell prompt does not reappear after ingestion.[/yellow]"
+    )
 
 
 @app.command()
@@ -51,7 +52,8 @@ def query(
         rag = ClayRAG(settings)
     except FileNotFoundError as exc:
         console.print(
-            "[red]Vector store not found. Run `pyllo ingest` first to build the knowledge base.[/red]"
+            "[red]Vector store not found. Run `pyllo ingest` first to build "
+            "the knowledge base.[/red]"
         )
         raise typer.Exit(code=1) from exc
 
@@ -79,11 +81,17 @@ def query(
 
 @app.command("minerals-download")
 def minerals_download(
-    minerals: List[str] = typer.Option(None, "--mineral", "-m", help="Specific mineral names to process (repeatable)."),
-    mineral_dir: Path = typer.Option(None, help="Path to mineral CSV exports (default: data/minerals)."),
+    minerals: List[str] = typer.Option(
+        None, "--mineral", "-m", help="Specific mineral names to process (repeatable)."
+    ),
+    mineral_dir: Path = typer.Option(
+        None, help="Path to mineral CSV exports (default: data/minerals)."
+    ),
     output_dir: Path = typer.Option(None, help="Directory to store downloaded manuscripts."),
     max_per_mineral: int = typer.Option(3, help="Maximum manuscripts to collect for each mineral."),
-    crossref_rows: int = typer.Option(12, help="Number of Crossref results to pull before filtering."),
+    crossref_rows: int = typer.Option(
+        12, help="Number of Crossref results to pull before filtering."
+    ),
     sleep_seconds: float = typer.Option(1.0, help="Delay between Crossref requests."),
     dry_run: bool = typer.Option(False, help="Only gather metadata without downloading PDFs."),
 ) -> None:
@@ -100,16 +108,23 @@ def minerals_download(
     )
 
     unique_minerals = {item.mineral for item in results}
-    console.print(f"[green]Collected {len(results)} manuscripts across {len(unique_minerals)} minerals.")
+    console.print(
+        f"[green]Collected {len(results)} manuscripts across {len(unique_minerals)} minerals."
+    )
 
 
 @app.command("cborg-models")
-def cborg_models(show_details: bool = typer.Option(False, help="Include additional columns in the listing.")) -> None:
+def cborg_models(
+    show_details: bool = typer.Option(False, help="Include additional columns in the listing.")
+) -> None:
     """Print the list of CBORG models available via the OpenAI-compatible endpoint."""
 
     models = fetch_cborg_models()
     if not models:
-        console.print("[yellow]No CBORG models found. Check https://cborg.lbl.gov/models/ for updates.[/yellow]")
+        console.print(
+            "[yellow]No CBORG models found. Check https://cborg.lbl.gov/models/ "
+            "for updates.[/yellow]"
+        )
         raise typer.Exit(1)
 
     table = Table(title="CBORG Models", show_header=True, header_style="bold magenta")
@@ -138,7 +153,10 @@ def structures_download(
     csv_path: Path = typer.Option(
         None,
         "--csv",
-        help="Path to the RRUFF mineral CSV export (defaults to latest rag-minerals-rruff-export-*.csv).",
+        help=(
+            "Path to the RRUFF mineral CSV export (defaults to latest "
+            "rag-minerals-rruff-export-*.csv)."
+        ),
     ),
     minerals: List[str] = typer.Option(
         None,
@@ -147,8 +165,12 @@ def structures_download(
         help="Limit downloads to one or more mineral names (repeatable).",
     ),
     limit: int = typer.Option(0, help="Stop after processing N minerals (0 processes all)."),
-    skip_experimental: bool = typer.Option(False, help="Skip experimental CIF downloads from RRUFF."),
-    skip_simulated: bool = typer.Option(False, help="Skip simulated CIF downloads from Materials Project."),
+    skip_experimental: bool = typer.Option(
+        False, help="Skip experimental CIF downloads from RRUFF."
+    ),
+    skip_simulated: bool = typer.Option(
+        False, help="Skip simulated CIF downloads from Materials Project."
+    ),
     api_key: str = typer.Option(
         None,
         "--materials-api-key",
@@ -164,7 +186,8 @@ def structures_download(
         matches = sorted(minerals_dir.glob("rag-minerals-rruff-export-*.csv"))
         if not matches:
             console.print(
-                "[red]Mineral CSV not found. Provide --csv or place a rag-minerals-rruff-export-*.csv under data/minerals.[/red]"
+                "[red]Mineral CSV not found. Provide --csv or place a "
+                "rag-minerals-rruff-export-*.csv under data/minerals.[/red]"
             )
             raise typer.Exit(code=1)
         csv_path = matches[-1]
